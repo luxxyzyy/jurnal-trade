@@ -1,0 +1,16 @@
+{
+  "name": "jurnal-trade",
+  "version": "1.0.0",
+  "description": "Trade Journal & Loss Review",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "sqlite3": "^6.0.1",
+    "sqlite": "^5.1.1",
+    "exceljs": "^4.4.0"
+  }
+}

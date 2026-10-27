@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trade Journal & Loss Review</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; min-height: 100vh; color: #1e293b; }
+    .container-custom { width: 100%; max-width: 1280px; margin: 0 auto; padding: 1.5rem; }
+
+    /* Layout */
+    .app-layout { display: flex; gap: 1.5rem; }
+    .sidebar { width: 260px; flex-shrink: 0; }
+    .main-content { flex: 1; min-width: 0; }
+
+    /* Sidebar */
+    .sidebar-header { padding: 1.5rem; background: white; border-radius: 0.75rem; margin-bottom: 1rem; border: 1px solid #e2e8f0; }
+    .sidebar-title { font-size: 1.25rem; font-weight: 700; color: #334155; }
+    .nav-list { list-style: none; }
+    .nav-item { margin-bottom: 0.25rem; }
+    .nav-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.5rem; color: #64748b; font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-link:hover { background: #f1f5f9; color: #334155; }
+    .nav-link.active { background: #eef2ff; color: #4338ca; }
+    .nav-link i { width: 20px; text-align: center; }
+
+    /* Mobile menu toggle */
+    .mobile-menu-btn { display: none; position: fixed; top: 1rem; left: 1rem; z-index: 100; background: white; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 0.5rem; cursor: pointer; }
+
+    @media (max-width: 768px) {
+      .sidebar { position: fixed; left: -280px; top: 0; height: 100vh; z-index: 90; transition: left 0.3s; background: #f8fafc; padding: 1rem; overflow-y: auto; }
+      .sidebar.open { left: 0; }
+      .mobile-menu-btn { display: block; }
+    }
+
+    .glass-card { background: white; border: 1px solid #e2e8f0; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .metric-card { background: white; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1.25rem; }
+    .btn-primary { background: #4f46e5; color: white; padding: 0.625rem 1.25rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem; border: none; }
+    .btn-primary:hover { background: #4338ca; }
+    .input-field { width: 100%; padding: 0.625rem 0.875rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 0.875rem; }
+    .input-field:focus { outline: none; border-color: #4f46e5; }
+    
+    .badge { padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+    .badge-profit { background: #d1fae5; color: #065f46; }
+    .badge-loss { background: #fee2e2; color: #991b1b; }
+    .badge-open { background: #dbeafe; color: #1e40af; }
+    
+    .impact-low { background: #fef9c3; color: #854d0e; }
+    .impact-medium { background: #ffedd5; color: #9a3412; }
+    .impact-high { background: #fee2e2; color: #991b1b; }
+
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; overflow-y: auto; padding: 1rem; }
+    .modal-content { background: white; margin: 2rem auto; padding: 2rem; border-radius: 0.75rem; max-width: 32rem; width: 100%; }
+
+    /* Session Clock */
+    .session-card { background: white; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1.25rem; min-height: 140px; }
+    .session-card.active { border-color: #bfdbfe; background: #eff6ff; }
+    .session-indicator { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .session-indicator.active { background-color: #3b82f6; box-shadow: 0 0 5px rgba(59,130,246,0.5); }
+    .session-indicator.closed { background-color: #cbd5e1; }
+
+    /* Filter buttons */
+    .btn-filter { padding: 0.4rem 0.75rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; color: #64748b; background: white; border: 1px solid #e2e8f0; transition: all 0.2s; }
+    .btn-filter.active { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
+    .btn-filter:hover:not(.active) { background: #f8fafc; border-color: #cbd5e1; }
+
+    /* Page sections */
+    .page-section { display: none; }
+    .page-section.active { display: block; }
+
+    /* Journal calendar */
+    .journal-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: #e2e8f0; border: 1px solid #e2e8f0; border-radius: 0.5rem; overflow: hidden; }
+    .journal-calendar-day-label { background: #f8fafc; padding: 0.75rem; text-align: center; font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; }
+    .journal-calendar-cell { background: white; min-height: 100px; padding: 0.5rem; cursor: pointer; display: flex; flex-direction: column; transition: background 0.15s; }
+    .journal-calendar-cell:hover { background: #f8fafc; }
+    .journal-calendar-cell.today { background: #eff6ff; border: 2px solid #3b82f6; position: relative; }
+    .journal-calendar-cell.today::after { content: 'Hari Ini'; position: absolute; top: 2px; right: 4px; font-size: 9px; font-weight: bold; color: #3b82f6; }
+    .journal-calendar-cell.other-month { background: #f1f5f9; opacity: 0.5; }
+    .journal-calendar-cell.past { background: #fcfcfc; }
+    .journal-calendar-cell.selected { outline: 3px solid #6366f1; z-index: 10; }
+    .journal-date-num { font-weight: 700; color: #334155; margin-bottom: auto; }
+    .journal-pl-summary { font-size: 11px; padding: 2px 4px; border-radius: 4px; font-weight: bold; text-align: center; margin-top: 4px; }
+    .journal-pl-profit { background: #d1fae5; color: #065f46; }
+    .journal-pl-loss { background: #fee2e2; color: #991b1b; }
+
+    /* Segmented Button */
+    .segmented-control { display: flex; background: #f1f5f9; padding: 0.25rem; border-radius: 0.5rem; border: 1px solid #e2e8f0; }
+    .segmented-control button { flex: 1; padding: 0.5rem; font-size: 0.875rem; font-weight: 600; border-radius: 0.375rem; transition: all 0.15s; }
+    .segmented-control button.active { background: white; color: #1e293b; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .segmented-control button:not(.active) { color: #64748b; }
+  </style>
+</head>
+<body>
+  <button class="mobile-menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+
+  <div class="app-layout container-custom">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Trade Journal</div>
+      </div>
+      <ul class="nav-list">
+        <li class="nav-item"><a href="#" class="nav-link active" data-page="dashboard" onclick="showPage('dashboard')"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+        <li class="nav-item"><a href="#" class="nav-link" data-page="calendar" onclick="showPage('calendar')"><i class="fas fa-calendar"></i> Kalender Jurnal</a></li>
+        <li class="nav-item"><a href="#" class="nav-link" data-page="input" onclick="showPage('input')"><i class="fas fa-plus-circle"></i> Input Jurnal</a></li>
+        <li class="nav-item"><a href="#" class="nav-link" data-page="output" onclick="showPage('output')"><i class="fas fa-list"></i> Output Jurnal</a></li>
+        <li class="nav-item"><a href="#" class="nav-link" data-page="rapor" onclick="showPage('rapor')"><i class="fas fa-file-alt"></i> Rapor Trading</a></li>
+        <li class="nav-item"><a href="#" class="nav-link" data-page="settings" onclick="showPage('settings')"><i class="fas fa-cog"></i> Pengaturan</a></li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Dashboard Page -->
+      <div id="page-dashboard" class="page-section active">
+        <header class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pt-2">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p class="text-gray-500 mt-1 text-sm">Ringkasan performa trading Anda</p>
+          </div>
+          <button class="btn-primary" onclick="exportExcel()"><i class="fas fa-file-excel"></i> Ekspor Excel</button>
+        </header>
+
+        <!-- Market Sessions Clock -->
+        <div class="mb-10">
+          <h2 class="text-base font-bold text-slate-700 flex items-center gap-2 mb-4">
+            <i class="fas fa-clock text-blue-500"></i> Jam Sesi Trading
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="sessionClockGrid">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+        <!-- Economic News Calendar -->
+        <div class="glass-card p-6 mb-10">
+          <div class="flex flex-col gap-5 mb-6">
+            <div class="flex justify-between items-center">
+              <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <i class="fas fa-calendar-alt text-indigo-500"></i> Berita Ekonomi
+              </h2>
+              <a href="https://www.forexfactory.com/calendar" target="_blank" class="text-xs font-semibold text-indigo-600 hover:underline">
+                Forex Factory <i class="fas fa-external-link-alt ml-1"></i>
+              </a>
+            </div>
+            
+            <div class="flex flex-col md:flex-row gap-4">
+              <div class="space-y-1">
+                <div class="text-[10px] font-bold text-slate-400 uppercase ml-1">Rentang Waktu</div>
+                <div class="flex flex-wrap gap-1.5" id="dateFilters">
+                  <button class="btn-filter active" onclick="setCalendarFilter('date', 'today')">Hari Ini</button>
+                  <button class="btn-filter" onclick="setCalendarFilter('date', 'tomorrow')">Besok</button>
+                  <button class="btn-filter" onclick="setCalendarFilter('date', 'week')">7 Hari</button>
+                  <button class="btn-filter" onclick="setCalendarFilter('date', 'all')">Semua</button>
+                </div>
+              </div>
+              
+              <div class="space-y-1">
+                <div class="text-[10px] font-bold text-slate-400 uppercase ml-1">Mata Uang</div>
+                <div class="flex flex-wrap gap-1.5" id="currencyFilters">
+                  <button class="btn-filter active" onclick="setCalendarFilter('currency', 'all')">Semua</button>
+                  <button class="btn-filter" onclick="setCalendarFilter('currency', 'USD')">USD</button>
+                  <button class="btn-filter" onclick="setCalendarFilter('currency', 'AUD')">AUD</button>
+                  <button class="btn-filter" onclick="setCalendarFilter('currency', 'JPY')">JPY</button>
+                  <button class="btn-filter" onclick="setCalendarFilter('currency', 'EUR')">EUR</button>
+                  <button class="btn-filter" onclick="setCalendarFilter('currency', 'GBP')">GBP</button>
+                </div>
+              </div>
+
+              <div class="space-y-1">
+                <div class="text-[10px] font-bold text-slate-400 uppercase ml-1">Dampak</div>
+                <div class="flex flex-wrap gap-1.5" id="impactFilters">
+                  <button class="btn-filter active" onclick="setCalendarFilter('impact', 'all')">Semua</button>
+                  <button class="btn-filter" onclick="setCalendarFilter('impact', 'Low')">Low</button>
+                  <button class="btn-filter" onclick="setCalendarFilter('impact', 'Medium')">Medium</button>
+                  <button class="btn-filter" onclick="setCalendarFilter('impact', 'High')">High</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-slate-100 text-slate-400">
+                  <th class="px-4 py-3 text-left font-bold uppercase text-[10px]">Waktu (WIB)</th>
+                  <th class="px-4 py-3 text-left font-bold uppercase text-[10px]">Currency</th>
+                  <th class="px-4 py-3 text-left font-bold uppercase text-[10px]">Impact</th>
+                  <th class="px-4 py-3 text-left font-bold uppercase text-[10px]">Event</th>
+                  <th class="px-4 py-3 text-right font-bold uppercase text-[10px]">Forecast</th>
+                </tr>
+              </thead>
+              <tbody id="calendarTable" class="divide-y divide-slate-50">
+                <tr><td colspan="5" class="px-6 py-8 text-center text-gray-400">Memuat berita...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="metric-card"><div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Modal Awal</div><div class="text-xl font-bold" id="initialCapital">...</div></div>
+          <div class="metric-card"><div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Total Deposit</div><div class="text-xl font-bold text-green-600" id="totalDeposits">...</div></div>
+          <div class="metric-card"><div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Total Withdrawal</div><div class="text-xl font-bold text-red-600" id="totalWithdrawals">...</div></div>
+          <div class="metric-card"><div class="text-[10px] font-bold text-indigo-600 uppercase mb-1">Saldo Akun</div><div class="text-xl font-bold text-indigo-700" id="currentBalance">...</div></div>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+          <div class="metric-card"><div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Net P&L</div><div class="text-xl font-bold" id="totalPnL">...</div></div>
+          <div class="metric-card"><div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Win Rate</div><div class="text-xl font-bold text-green-600" id="winRate">...</div></div>
+          <div class="metric-card"><div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Closed Trades</div><div class="text-xl font-bold" id="totalClosedTrades">...</div></div>
+          <div class="metric-card"><div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Open Trades</div><div class="text-xl font-bold" id="totalOpenTrades">...</div></div>
+        </div>
+      </div>
+
+      <!-- Calendar Journal Page -->
+      <div id="page-calendar" class="page-section">
+        <header class="mb-8 pt-2">
+          <h1 class="text-2xl font-bold text-gray-900">Kalender Jurnal</h1>
+          <p class="text-gray-500 mt-1 text-sm">Riwayat transaksi berdasarkan tanggal</p>
+        </header>
+        <div class="glass-card p-6">
+          <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center gap-4">
+              <span id="calendarMonthYear" class="text-lg font-bold text-slate-700 w-40"></span>
+              <div class="flex gap-1">
+                <button class="btn-filter" onclick="changeMonth(-1)"><i class="fas fa-chevron-left"></i></button>
+                <button class="btn-filter" onclick="changeMonth(1)"><i class="fas fa-chevron-right"></i></button>
+              </div>
+            </div>
+            <button class="btn-filter" onclick="goToToday()">Hari Ini</button>
+          </div>
+          
+          <div id="journalCalendar" class="journal-calendar-grid">
+            <!-- Injected via JS -->
+          </div>
+
+          <div class="mt-8 flex gap-6 text-[10px] font-bold uppercase text-slate-400 border-t pt-4">
+            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm bg-indigo-50 border border-blue-400"></span> Hari Ini</div>
+            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm bg-green-100 border border-green-200"></span> Profit</div>
+            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm bg-red-100 border border-red-200"></span> Loss</div>
+            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm bg-slate-100 opacity-50"></span> Bulan Lain</div>
+          </div>
+
+          <div id="journalCalendarDetail" class="mt-8 p-6 bg-slate-50 rounded-xl hidden border border-slate-100"></div>
+        </div>
+      </div>
+
+      <!-- Input Journal Page -->
+      <div id="page-input" class="page-section">
+        <header class="mb-8 pt-2">
+          <h1 class="text-2xl font-bold text-gray-900">Input Jurnal</h1>
+          <p class="text-gray-500 mt-1 text-sm">Catat detail transaksi baru</p>
+        </header>
+        <div class="max-w-2xl">
+          <div class="glass-card p-8">
+            <form id="txForm" class="space-y-6">
+              <!-- Detail Transaksi -->
+              <div class="space-y-4">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Detail Transaksi</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1.5 ml-1">Instrumen</label>
+                    <input type="text" id="instrument" class="input-field" value="XAUUSD" placeholder="Contoh: XAUUSD, EURUSD" required>
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1.5 ml-1">Ukuran Lot</label>
+                    <input type="number" id="lot" class="input-field" step="0.01" value="0.01" required>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Arah Posisi -->
+              <div class="space-y-4">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Arah Posisi</h3>
+                <div class="segmented-control" id="directionControl">
+                  <button type="button" class="active" onclick="setDirection('LONG')">LONG</button>
+                  <button type="button" onclick="setDirection('SHORT')">SHORT</button>
+                </div>
+                <input type="hidden" id="direction" value="LONG">
+              </div>
+
+              <!-- Harga Transaksi -->
+              <div class="space-y-4">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Harga</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1.5 ml-1">Entry Price</label>
+                    <input type="number" id="entryPrice" class="input-field" step="0.00001" placeholder="0.00000" required>
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1.5 ml-1">Exit Price</label>
+                    <input type="number" id="exitPrice" class="input-field" step="0.00001" placeholder="0.00000">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Manajemen Risiko -->
+              <div class="space-y-4">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Risk Management</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1.5 ml-1">Stop Loss</label>
+                    <input type="number" id="stopLoss" class="input-field" step="0.00001" placeholder="Optional">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1.5 ml-1">Take Profit</label>
+                    <input type="number" id="takeProfit" class="input-field" step="0.00001" placeholder="Optional">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Hasil -->
+              <div class="space-y-4">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Hasil Trading</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1.5 ml-1">Status</label>
+                    <select id="status" class="input-field">
+                      <option value="PROFIT">PROFIT</option>
+                      <option value="LOSS">LOSS</option>
+                      <option value="OPEN">OPEN (Belum Selesai)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1.5 ml-1">P&L Manual ($)</label>
+                    <input type="number" id="manualPnL" class="input-field" step="0.01" placeholder="Otomatis jika kosong">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Alasan -->
+              <div class="space-y-4">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Evaluasi</h3>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1.5 ml-1">Alasan Entry / Setup</label>
+                  <textarea id="reason" class="input-field" rows="4" placeholder="Jelaskan alasan Anda membuka posisi ini (analisa teknikal, berita, emosi, dll)..."></textarea>
+                </div>
+              </div>
+
+              <button type="submit" class="btn-primary w-full justify-center py-4 text-sm tracking-wide">
+                <i class="fas fa-save mr-2"></i> SIMPAN TRADE
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Output Journal Page -->
+      <div id="page-output" class="page-section">
+        <header class="mb-8 pt-2 flex justify-between items-center">
+          <div><h1 class="text-2xl font-bold text-gray-900">Output Jurnal</h1><p class="text-gray-500 mt-1 text-sm">Semua transaksi tersimpan</p></div>
+          <button class="btn-primary" onclick="exportExcel()"><i class="fas fa-file-excel"></i> Ekspor Excel</button>
+        </header>
+        <div class="glass-card p-6">
+          <div class="flex flex-wrap gap-4 mb-6">
+            <div class="relative flex-1 min-w-[200px]">
+              <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              <input type="text" id="searchTrade" class="input-field pl-9 w-full" placeholder="Cari instrumen..." oninput="filterTrades()">
+            </div>
+            <select id="filterStatus" class="input-field w-40" onchange="filterTrades()">
+              <option value="">Semua Status</option>
+              <option value="OPEN">Open</option>
+              <option value="PROFIT">Profit</option>
+              <option value="LOSS">Loss</option>
+              <option value="BREAKEVEN">Breakeven</option>
+            </select>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead><tr class="border-b border-slate-100 text-slate-400">
+                <th class="px-4 py-3 text-left font-bold uppercase text-[10px]">Tanggal</th>
+                <th class="px-4 py-3 text-left font-bold uppercase text-[10px]">Instrumen</th>
+                <th class="px-4 py-3 text-left font-bold uppercase text-[10px]">Arah</th>
+                <th class="px-4 py-3 text-left font-bold uppercase text-[10px]">Lot</th>
+                <th class="px-4 py-3 text-left font-bold uppercase text-[10px]">Entry</th>
+                <th class="px-4 py-3 text-left font-bold uppercase text-[10px]">Exit</th>
+                <th class="px-4 py-3 text-left font-bold uppercase text-[10px]">Status</th>
+                <th class="px-4 py-3 text-right font-bold uppercase text-[10px]">P&L</th>
+                <th class="px-4 py-3 text-left font-bold uppercase text-[10px]">Jurnal & Evaluasi</th>
+                <th class="px-4 py-3 text-center font-bold uppercase text-[10px]">Aksi</th>
+              </tr></thead>
+              <tbody id="tradesTable" class="divide-y divide-slate-50"><tr><td colspan="9" class="px-6 py-12 text-center text-gray-400">Memuat data...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rapor Trading Page -->
+      <div id="page-rapor" class="page-section">
+        <header class="mb-8 pt-2 flex justify-between items-center">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">Rapor Trading</h1>
+            <p class="text-gray-500 mt-1 text-sm">Analisis performa, statistik, dan gelar evaluasi</p>
+          </div>
+          <div class="flex gap-1.5" id="raporPeriodFilters">
+            <button class="btn-filter active" onclick="setRaporPeriod('all')">Semua</button>
+            <button class="btn-filter" onclick="setRaporPeriod('week')">Minggu Ini</button>
+            <button class="btn-filter" onclick="setRaporPeriod('month')">Bulan Ini</button>
+            <button class="btn-filter" onclick="setRaporPeriod('30days')">30 Hari</button>
+          </div>
+        </header>
+
+        <!-- Gelar Trading Card -->
+        <div class="glass-card p-8 mb-8 bg-gradient-to-br from-indigo-900 to-slate-900 text-white">
+          <div class="text-[10px] font-bold uppercase tracking-widest text-indigo-300 mb-2">Gelar Trading Anda</div>
+          <div id="raporTitleContainer">
+            <h2 class="text-3xl font-black text-white mb-2" id="raporTitleText">Memuat...</h2>
+            <p class="text-indigo-200 text-sm italic mb-4" id="raporSubtitleText"></p>
+            <div class="text-xs text-slate-300" id="raporReasonText"></div>
+          </div>
+        </div>
+
+        <!-- Rapor Stats Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div class="metric-card"><div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Win Rate</div><div class="text-2xl font-bold text-green-600" id="raporWinRate">...</div></div>
+          <div class="metric-card"><div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Net P&L</div><div class="text-2xl font-bold" id="raporNetPnL">...</div></div>
+          <div class="metric-card"><div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Profit Factor</div><div class="text-2xl font-bold text-indigo-600" id="raporProfitFactor">...</div></div>
+          <div class="metric-card"><div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Total Closed</div><div class="text-2xl font-bold" id="raporClosed">...</div></div>
+        </div>
+
+        <!-- Detailed Breakdown -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div class="glass-card p-6">
+            <h3 class="text-base font-bold text-slate-800 mb-4">Statistik Performa</h3>
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between border-b pb-2"><span class="text-slate-500">Total Profit</span><span class="font-bold text-green-600" id="raporTotalProfit">...</span></div>
+              <div class="flex justify-between border-b pb-2"><span class="text-slate-500">Total Loss</span><span class="font-bold text-red-600" id="raporTotalLoss">...</span></div>
+              <div class="flex justify-between border-b pb-2"><span class="text-slate-500">Rata-rata Win</span><span class="font-bold text-green-600" id="raporAvgWin">...</span></div>
+              <div class="flex justify-between border-b pb-2"><span class="text-slate-500">Rata-rata Loss</span><span class="font-bold text-red-600" id="raporAvgLoss">...</span></div>
+              <div class="flex justify-between"><span class="text-slate-500">Status Evaluasi</span><span class="font-bold text-slate-700"><span id="raporEvaluated">0</span> Evaluasi / <span id="raporUnevaluated">0</span> Belum</span></div>
+            </div>
+          </div>
+
+          <div class="glass-card p-6">
+            <h3 class="text-base font-bold text-slate-800 mb-4">Ringkasan Kesalahan</h3>
+            <div id="raporLossReasonsList" class="space-y-3">
+              <div class="text-sm text-slate-400 italic">Memuat data kesalahan...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Page -->
+      <div id="page-settings" class="page-section">
+        <header class="mb-8 pt-2"><h1 class="text-2xl font-bold text-gray-900">Pengaturan</h1><p class="text-gray-500 mt-1 text-sm">Kelola periode dan data</p></header>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="glass-card p-6">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Mulai Periode Baru</h2>
+            <p class="text-sm text-slate-500 mb-6">Simpan periode saat ini dan mulai jurnal baru dengan modal awal berbeda. Data lama tetap tersimpan.</p>
+            <div class="space-y-4">
+              <div><label class="block text-[11px] font-bold text-slate-600 uppercase mb-1.5 ml-1">Tanggal Mulai</label><input type="date" id="newPeriodStart" class="input-field"></div>
+              <div><label class="block text-[11px] font-bold text-slate-600 uppercase mb-1.5 ml-1">Modal Awal Baru (USD)</label><input type="number" id="newInitialCapital" class="input-field" step="0.01" placeholder="0.00"></div>
+              <button class="btn-primary w-full justify-center py-3" onclick="startNewPeriod()">Konfirmasi Periode Baru</button>
+            </div>
+          </div>
+          <div class="glass-card p-6 border-red-50">
+            <h2 class="text-lg font-bold text-red-600 mb-4">Reset Data</h2>
+            <p class="text-sm text-slate-500 mb-6">Hapus seluruh transaksi, catatan, dan evaluasi. Tindakan ini permanen dan tidak dapat dibatalkan.</p>
+            <button class="bg-red-50 hover:bg-red-100 text-red-600 px-5 py-3 rounded-lg font-bold text-xs uppercase tracking-wider transition w-full" onclick="confirmReset()">Hapus Seluruh Data</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Deposit Modal -->
+  <div id="depositModal" class="modal"><div class="modal-content"><div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-gray-900">Deposit</h3><button class="text-gray-400 hover:text-gray-600" onclick="hideModal('depositModal')"><i class="fas fa-times text-xl"></i></button></div><form id="depositForm" class="space-y-4">
+    <div><label class="block text-xs font-bold text-gray-700 uppercase mb-1">Jumlah Deposit (USD)</label><input type="number" id="depositAmount" class="input-field" step="0.01" required></div>
+    <div><label class="block text-xs font-bold text-gray-700 uppercase mb-1">Catatan</label><input type="text" id="depositNotes" class="input-field"></div>
+    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white w-full py-3 rounded-lg font-bold transition">Konfirmasi Deposit</button>
+  </form></div></div>
+
+  <!-- Withdrawal Modal -->
+  <div id="withdrawalModal" class="modal"><div class="modal-content"><div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-gray-900">Withdrawal</h3><button class="text-gray-400 hover:text-gray-600" onclick="hideModal('withdrawalModal')"><i class="fas fa-times text-xl"></i></button></div><form id="withdrawalForm" class="space-y-4">
+    <div><label class="block text-xs font-bold text-gray-700 uppercase mb-1">Jumlah Withdrawal (USD)</label><input type="number" id="withdrawalAmount" class="input-field" step="0.01" required></div>
+    <div><label class="block text-xs font-bold text-gray-700 uppercase mb-1">Catatan</label><input type="text" id="withdrawalNotes" class="input-field"></div>
+    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white w-full py-3 rounded-lg font-bold transition">Konfirmasi Withdrawal</button>
+  </form></div></div>
+
+  <script defer>
+    // State
+    let cachedEvents = [];
+    let allTrades = [];
+    let currentFilters = { date: 'today', currency: 'all', impact: 'all' };
+    let journalCalendarDate = new Date();
+    let journalTradesByDate = {};
+    let selectedDateStr = null;
+
+    // UI Helpers
+    function showModal(id) { document.getElementById(id).style.display = 'block'; }
+    function hideModal(id) { document.getElementById(id).style.display = 'none'; }
+    function exportExcel() { window.location.href = '/api/export'; }
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+    
+    function showPage(page) {
+      document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+      const activePage = document.getElementById('page-' + page);
+      if (activePage) activePage.classList.add('active');
+      
+      document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+      const activeLink = document.querySelector('.nav-link[data-page="' + page + '"]');
+      if (activeLink) activeLink.classList.add('active');
+      
+      document.getElementById('sidebar').classList.remove('open');
+      
+      if (page === 'dashboard') { loadDashboard(); fetchEvents(); }
+      if (page === 'calendar') renderJournalCalendar();
+      if (page === 'output') loadTrades();
+      if (page === 'rapor') loadRapor();
+    }
+
+    // Rapor Trading Logic
+    let currentRaporPeriod = 'all';
+    function setRaporPeriod(period) {
+      currentRaporPeriod = period;
+      document.querySelectorAll('#raporPeriodFilters .btn-filter').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('onclick').includes(`'${period}'`));
+      });
+      loadRapor();
+    }
+
+    async function loadRapor() {
+      try {
+        const statsRes = await fetch(`/api/rapor/stats?period=${currentRaporPeriod}`);
+        const stats = await statsRes.json();
+        
+        const titlesRes = await fetch(`/api/rapor/titles?period=${currentRaporPeriod}`);
+        const titles = await titlesRes.json();
+
+        const reasonsRes = await fetch(`/api/rapor/loss-reasons?period=${currentRaporPeriod}`);
+        const reasons = await reasonsRes.json();
+
+        // Update stats
+        document.getElementById('raporWinRate').textContent = stats.winRate.toFixed(1) + '%';
+        document.getElementById('raporNetPnL').textContent = (stats.netPnL >= 0 ? '+' : '-') + '$' + Math.abs(stats.netPnL).toLocaleString();
+        document.getElementById('raporNetPnL').className = 'text-2xl font-bold ' + (stats.netPnL >= 0 ? 'text-green-600' : 'text-red-600');
+        document.getElementById('raporProfitFactor').textContent = stats.profitFactor === Infinity ? '∞' : stats.profitFactor.toFixed(2);
+        document.getElementById('raporClosed').textContent = stats.totalClosed;
+        
+        document.getElementById('raporTotalProfit').textContent = '$' + stats.totalProfit.toLocaleString();
+        document.getElementById('raporTotalLoss').textContent = '$' + stats.totalLoss.toLocaleString();
+        document.getElementById('raporAvgWin').textContent = '$' + stats.avgWin.toFixed(2);
+        document.getElementById('raporAvgLoss').textContent = '$' + stats.avgLoss.toFixed(2);
+        document.getElementById('raporEvaluated').textContent = stats.evaluated;
+        document.getElementById('raporUnevaluated').textContent = stats.unevaluated;
+
+        // Update title
+        if (titles.title) {
+          document.getElementById('raporTitleText').textContent = titles.title;
+          document.getElementById('raporSubtitleText').textContent = titles.subtitle;
+          document.getElementById('raporReasonText').textContent = titles.reason;
+        } else {
+          document.getElementById('raporTitleText').textContent = 'BELUM ADA GELAR';
+          document.getElementById('raporSubtitleText').textContent = titles.subtitle;
+          document.getElementById('raporReasonText').textContent = '';
+        }
+
+        // Update loss reasons list
+        const reasonsList = document.getElementById('raporLossReasonsList');
+        if (reasons.length > 0) {
+          reasonsList.innerHTML = reasons.map(r => `
+            <div class="flex justify-between items-center border-b border-slate-50 pb-2">
+              <span class="text-slate-700">${r.label}</span>
+              <span class="bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-bold text-xs">${r.count}x</span>
+            </div>
+          `).join('');
+        } else {
+          reasonsList.innerHTML = '<div class="text-sm text-slate-400 italic">Belum ada evaluasi loss tercatat.</div>';
+        }
+
+      } catch (e) {
+        console.error('Failed to load rapor:', e);
+      }
+    }
+
+    function setDirection(dir) {
+      document.getElementById('direction').value = dir;
+      document.querySelectorAll('#directionControl button').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent === dir);
+      });
+    }
+
+    // Sessions
+    function updateSessionClocks() {
+      const now = new Date();
+      const sessions = [
+        { id: 'tokyo', name: 'Asia (Tokyo)', tz: 'Asia/Tokyo', openHour: 9, closeHour: 18 },
+        { id: 'london', name: 'London', tz: 'Europe/London', openHour: 8, closeHour: 17 },
+        { id: 'newyork', name: 'New York', tz: 'America/New_York', openHour: 8, closeHour: 17 }
+      ];
+      
+      sessions.forEach(s => {
+        const localTimeStr = now.toLocaleTimeString('en-GB', { timeZone: s.tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        const wibTimeStr = now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        const localHour = parseInt(localTimeStr.split(':')[0], 10);
+        const localMinute = parseInt(localTimeStr.split(':')[1], 10);
+        const localSecond = parseInt(localTimeStr.split(':')[2], 10);
+        const totalSecondsLocal = localHour * 3600 + localMinute * 60 + localSecond;
+        const openSeconds = s.openHour * 3600;
+        const closeSeconds = s.closeHour * 3600;
+        const isActive = totalSecondsLocal >= openSeconds && totalSecondsLocal < closeSeconds;
+        
+        let targetSeconds = 0, isCountdownToClose = isActive;
+        if (isActive) { targetSeconds = closeSeconds - totalSecondsLocal; }
+        else { 
+          if (totalSecondsLocal < openSeconds) targetSeconds = openSeconds - totalSecondsLocal; 
+          else targetSeconds = (24 * 3600 - totalSecondsLocal) + openSeconds; 
+        }
+        
+        const cdHours = String(Math.floor(targetSeconds / 3600)).padStart(2, '0');
+        const cdMinutes = String(Math.floor((targetSeconds % 3600) / 60)).padStart(2, '0');
+        const cdSeconds = String(targetSeconds % 60).padStart(2, '0');
+        
+        const el = document.querySelector(`[data-session-id="${s.id}"]`);
+        if (el) {
+          el.innerHTML = `
+            <div class="flex justify-between items-center mb-4">
+              <span class="font-bold text-slate-700 text-sm flex items-center"><span class="session-indicator ${isActive ? 'active' : 'closed'}"></span>${s.name}</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded ${isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}">${isActive ? 'ACTIVE' : 'CLOSED'}</span>
+            </div>
+            <div class="space-y-2 text-[11px] text-slate-500">
+              <div class="flex justify-between"><span>Lokal:</span><span class="font-bold text-slate-800">${localTimeStr}</span></div>
+              <div class="flex justify-between"><span>WIB:</span><span class="font-bold text-slate-800">${wibTimeStr}</span></div>
+              <div class="flex justify-between pt-3 border-t border-slate-50 mt-2">
+                <span class="uppercase text-[9px] font-bold tracking-wider">${isCountdownToClose ? 'Tutup dalam' : 'Buka dalam'}</span>
+                <span class="font-mono font-bold text-blue-600">${cdHours}:${cdMinutes}:${cdSeconds}</span>
+              </div>
+            </div>`;
+        }
+      });
+    }
+
+    // Economic Calendar
+    function setCalendarFilter(type, value) {
+      currentFilters[type] = value;
+      const btnGroup = document.getElementById(type + 'Filters');
+      if (btnGroup) {
+        btnGroup.querySelectorAll('.btn-filter').forEach(btn => {
+          btn.classList.toggle('active', btn.getAttribute('onclick').includes(`'${value}'`));
+        });
+      }
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      const tbody = document.getElementById('calendarTable');
+      if (!cachedEvents || cachedEvents.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-400">Tidak ada jadwal berita</td></tr>';
+        return;
+      }
+
+      const now = new Date();
+      const todayWibStr = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' })).toLocaleDateString('en-CA');
+
+      let filtered = cachedEvents.filter(ev => {
+        const evDate = new Date(ev.time);
+        const evWibStr = evDate.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+        
+        // Date Filter
+        if (currentFilters.date === 'today' && evWibStr !== todayWibStr) return false;
+        if (currentFilters.date === 'tomorrow') {
+          const tom = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+          tom.setDate(tom.getDate() + 1);
+          if (evWibStr !== tom.toLocaleDateString('en-CA')) return false;
+        }
+        if (currentFilters.date === 'week') {
+          const nextWeek = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+          nextWeek.setDate(nextWeek.getDate() + 7);
+          if (evDate < now || evDate > nextWeek) return false;
+        }
+
+        // Currency Filter
+        if (currentFilters.currency !== 'all' && ev.currency !== currentFilters.currency) return false;
+
+        // Impact Filter
+        if (currentFilters.impact !== 'all' && ev.impact !== currentFilters.impact) return false;
+
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-slate-400 text-xs italic font-medium">Tidak ada berita sesuai filter.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(ev => {
+        const impactClass = ev.impact === 'High' ? 'impact-high' : ev.impact === 'Medium' ? 'impact-medium' : 'impact-low';
+        const timeWib = new Date(ev.time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
+        const dateWib = new Date(ev.time).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', timeZone: 'Asia/Jakarta' });
+        return `
+          <tr class="hover:bg-slate-50/50 transition-colors">
+            <td class="px-4 py-4 text-xs font-bold text-slate-500">${timeWib}<br><span class="text-[9px] font-medium opacity-60">${dateWib}</span></td>
+            <td class="px-4 py-4 text-xs font-black text-slate-800">${ev.currency}</td>
+            <td class="px-4 py-4"><span class="px-2 py-0.5 rounded text-[9px] font-black uppercase ${impactClass}">${ev.impact}</span></td>
+            <td class="px-4 py-4 text-xs font-bold text-slate-700">${ev.title}</td>
+            <td class="px-4 py-4 text-xs text-right font-medium text-slate-400">${ev.forecast || '-'}</td>
+          </tr>`;
+      }).join('');
+    }
+
+    function fetchEvents() {
+      fetch('/api/calendar', { signal: AbortSignal.timeout(5000) })
+        .then(res => res.json())
+        .then(events => { cachedEvents = events; renderCalendar(); })
+        .catch(e => { console.error(e); document.getElementById('calendarTable').innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-red-400">Gagal memuat.</td></tr>'; });
+    }
+
+    // Dashboard Data
+    function loadDashboard() {
+      const ids = ['initialCapital', 'totalDeposits', 'totalWithdrawals', 'currentBalance', 'totalPnL', 'winRate', 'totalClosedTrades', 'totalOpenTrades'];
+      ids.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '...'; });
+      
+      fetch('/api/dashboard', { signal: AbortSignal.timeout(5000) })
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('initialCapital').textContent = '$' + (data.initialCapital || 0).toLocaleString();
+          document.getElementById('totalDeposits').textContent = '$' + (data.totalDeposits || 0).toLocaleString();
+          document.getElementById('totalWithdrawals').textContent = '$' + (data.totalWithdrawals || 0).toLocaleString();
+          document.getElementById('currentBalance').textContent = '$' + (data.balance || 0).toLocaleString();
+          const pnlValue = data.totalPnL || 0;
+          const pnlEl = document.getElementById('totalPnL');
+          pnlEl.textContent = (pnlValue >= 0 ? '+' : '') + '$' + pnlValue.toLocaleString();
+          pnlEl.className = 'text-xl font-bold ' + (pnlValue >= 0 ? 'text-green-600' : 'text-red-600');
+          document.getElementById('winRate').textContent = (data.winRate || 0).toFixed(1) + '%';
+          document.getElementById('totalClosedTrades').textContent = data.totalClosedTrades || 0;
+          document.getElementById('totalOpenTrades').textContent = data.totalOpenTrades || 0;
+        })
+        .catch(err => { console.error(err); ids.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = 'Err'; }); });
+    }
+
+    // Trades
+    async function loadTrades() {
+      try {
+        const res = await fetch('/api/transactions', { signal: AbortSignal.timeout(5000) });
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        allTrades = data.transactions || [];
+        renderTradesTable(allTrades);
+      } catch (err) {
+        console.error('Trades error:', err);
+        document.getElementById('tradesTable').innerHTML = '<tr><td colspan="10" class="px-6 py-12 text-center text-red-400">Gagal memuat.</td></tr>';
+      }
+    }
+
+    async function loadTransactionDetail(txId) {
+      try {
+        const res = await fetch(`/api/transactions/${txId}`, { signal: AbortSignal.timeout(5000) });
+        if (!res.ok) throw new Error('Failed');
+        const tx = await res.json();
+        showTransactionDetail(tx);
+      } catch (e) {
+        console.error('Failed to load transaction detail:', e);
+        alert('Gagal memuat detail transaksi');
+      }
+    }
+
+    function showTransactionDetail(tx) {
+      // Close existing modal if any
+      const existingModal = document.getElementById('txDetailModal');
+      if (existingModal) {
+        document.body.removeChild(existingModal);
+      }
+      
+      const pnl = tx.manualPnL ?? tx.calculatedPnL ?? 0;
+      const pnlClass = pnl >= 0 ? 'text-green-600' : 'text-red-600';
+      const statusBadge = tx.status === 'PROFIT' ? 'badge-profit' : tx.status === 'LOSS' ? 'badge-loss' : tx.status === 'BREAKEVEN' ? 'bg-yellow-100 text-yellow-700' : 'badge-open';
+      
+      let evalHtml = '';
+      if (tx.evaluation) {
+        const ev = tx.evaluation;
+        evalHtml = `
+          <div class="mt-6 border-t border-slate-100 pt-6">
+            <h4 class="font-bold text-slate-700 mb-4 text-xs uppercase tracking-wider">Evaluasi Loss</h4>
+            <div class="space-y-3 text-sm">
+              ${ev.mistakes ? `<div><span class="font-bold text-slate-500">Kesalahan:</span><p class="mt-1 text-slate-700">${ev.mistakes}</p></div>` : ''}
+              ${ev.chronology ? `<div><span class="font-bold text-slate-500">Alasan Entry:</span><p class="mt-1 text-slate-700">${ev.chronology}</p></div>` : ''}
+              ${ev.lessons ? `<div><span class="font-bold text-slate-500">Pelajaran:</span><p class="mt-1 text-slate-700">${ev.lessons}</p></div>` : ''}
+              ${ev.actionItems ? `<div><span class="font-bold text-slate-500">Tindakan Perbaikan:</span><p class="mt-1 text-slate-700">${ev.actionItems}</p></div>` : ''}
+              <div class="pt-3 border-t text-[10px] text-slate-400">
+                Terakhir diperbarui: ${new Date(ev.updatedAt).toLocaleString('id-ID')}
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        evalHtml = `
+          <div class="mt-6 border-t border-slate-100 pt-6">
+            <div class="text-center py-6">
+              <div class="text-slate-400 text-sm mb-3">Belum ada evaluasi untuk transaksi ini</div>
+              <button onclick="showEvaluateModal('${tx.id}')" class="btn-primary text-xs py-2 px-4">
+                <i class="fas fa-edit mr-1"></i> Isi Evaluasi
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      // Create modal for detail
+      const modal = document.createElement('div');
+      modal.id = 'txDetailModal';
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal-content max-w-2xl">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-bold text-gray-900">Detail Transaksi</h3>
+            <button class="text-gray-400 hover:text-gray-600" onclick="closeTransactionDetail()" aria-label="Tutup"><i class="fas fa-times text-xl"></i></button>
+          </div>
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div><span class="text-[10px] font-bold text-slate-400 uppercase">Tanggal</span><div class="font-semibold text-slate-700">${new Date(tx.dateTime).toLocaleString('id-ID')}</div></div>
+              <div><span class="text-[10px] font-bold text-slate-400 uppercase">Instrumen</span><div class="font-semibold text-slate-700">${tx.instrument}</div></div>
+              <div><span class="text-[10px] font-bold text-slate-400 uppercase">Arah</span><div class="font-bold ${tx.direction === 'LONG' ? 'text-green-600' : 'text-red-600'}">${tx.direction}</div></div>
+              <div><span class="text-[10px] font-bold text-slate-400 uppercase">Lot</span><div class="font-semibold text-slate-700">${tx.lot}</div></div>
+              <div><span class="text-[10px] font-bold text-slate-400 uppercase">Entry Price</span><div class="font-semibold text-slate-700">${tx.entryPrice}</div></div>
+              <div><span class="text-[10px] font-bold text-slate-400 uppercase">Exit Price</span><div class="font-semibold text-slate-700">${tx.exitPrice || '-'}</div></div>
+              <div><span class="text-[10px] font-bold text-slate-400 uppercase">Stop Loss</span><div class="font-semibold text-slate-700">${tx.stopLoss || '-'}</div></div>
+              <div><span class="text-[10px] font-bold text-slate-400 uppercase">Take Profit</span><div class="font-semibold text-slate-700">${tx.takeProfit || '-'}</div></div>
+              <div><span class="text-[10px] font-bold text-slate-400 uppercase">Status</span><div><span class="badge ${statusBadge}">${tx.status}</span></div></div>
+              <div><span class="text-[10px] font-bold text-slate-400 uppercase">P&L Bersih</span><div class="font-black ${pnlClass}">${(pnl >= 0 ? '+' : '-')}$${Math.abs(pnl).toFixed(2)}</div></div>
+            </div>
+            ${tx.chronology ? `
+              <div class="mt-4 border-t border-slate-100 pt-4">
+                <h4 class="font-bold text-slate-700 mb-2 text-xs uppercase tracking-wider">Alasan Entry / Setup</h4>
+                <p class="text-sm text-slate-600">${tx.chronology}</p>
+              </div>
+            ` : ''}
+            ${evalHtml}
+          </div>
+        </div>
+      `;
+      
+      // Add click handler for backdrop
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeTransactionDetail();
+      });
+      
+      document.body.appendChild(modal);
+      modal.style.display = 'block';
+    }
+
+    function closeTransactionDetail() {
+      const modal = document.getElementById('txDetailModal');
+      if (modal) {
+        modal.style.display = 'none';
+        setTimeout(() => {
+          if (modal.parentNode) modal.parentNode.removeChild(modal);
+        }, 100);
+      }
+    }
+
+    function showEvaluateModal(txId) {
+      alert('Fitur evaluasi akan segera hadir');
+    }
+
+    // Journal Calendar
+    function renderJournalCalendar() {
+      fetch('/api/transactions', { signal: AbortSignal.timeout(5000) })
+        .then(res => res.json())
+        .then(data => {
+          journalTradesByDate = {};
+          (data.transactions || []).forEach(tx => {
+            const dateKey = new Date(tx.dateTime).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+            if (!journalTradesByDate[dateKey]) journalTradesByDate[dateKey] = [];
+            journalTradesByDate[dateKey].push(tx);
+          });
+          
+          const year = journalCalendarDate.getFullYear();
+          const month = journalCalendarDate.getMonth();
+          document.getElementById('calendarMonthYear').textContent = journalCalendarDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+          
+          const firstDay = new Date(year, month, 1);
+          const lastDay = new Date(year, month + 1, 0);
+          const startDate = new Date(firstDay);
+          startDate.setDate(startDate.getDate() - firstDay.getDay());
+          
+          const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+          let html = days.map(d => `<div class="journal-calendar-day-label">${d}</div>`).join('');
+          
+          const today = new Date();
+          const todayStr = today.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+          const todayWib = new Date(today.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+          
+          for (let i = 0; i < 42; i++) {
+            const cellDate = new Date(startDate);
+            cellDate.setDate(cellDate.getDate() + i);
+            const dateStr = cellDate.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+            
+            const isToday = dateStr === todayStr;
+            const isOtherMonth = cellDate.getMonth() !== month;
+            const isPast = cellDate < todayWib && !isToday;
+            const trades = journalTradesByDate[dateStr] || [];
+            const plSum = trades.reduce((sum, tx) => sum + (tx.manualPnL ?? tx.calculatedPnL ?? 0), 0);
+            
+            html += `
+              <div class="journal-calendar-cell ${isToday ? 'today' : ''} ${isOtherMonth ? 'other-month' : ''} ${isPast ? 'past' : ''} ${selectedDateStr === dateStr ? 'selected' : ''}" 
+                   onclick="showDayDetail('${dateStr}')">
+                <div class="journal-date-num ${isToday ? 'text-blue-600' : ''}">${cellDate.getDate()}</div>
+                ${trades.length > 0 ? `<div class="journal-pl-summary ${plSum >= 0 ? 'journal-pl-profit' : 'journal-pl-loss'}">${plSum >= 0 ? '+' : '-'}$${Math.abs(plSum).toFixed(0)}</div>` : ''}
+              </div>`;
+          }
+          document.getElementById('journalCalendar').innerHTML = html;
+        });
+    }
+
+    function showDayDetail(dateStr) {
+      selectedDateStr = dateStr;
+      renderJournalCalendar();
+      const trades = journalTradesByDate[dateStr] || [];
+      const detailEl = document.getElementById('journalCalendarDetail');
+      if (!trades.length) { detailEl.classList.add('hidden'); return; }
+      detailEl.classList.remove('hidden');
+      detailEl.innerHTML = `
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-black text-slate-800 text-sm uppercase tracking-tight">${new Date(dateStr + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</h3>
+          <span class="text-[10px] font-bold text-slate-400">${trades.length} TRANSAKSI</span>
+        </div>` +
+        trades.map(tx => {
+          const pnl = tx.manualPnL ?? tx.calculatedPnL ?? 0;
+          return `
+            <div class="flex justify-between items-center py-3 border-b border-slate-100 last:border-0">
+              <div>
+                <div class="font-bold text-slate-800 text-xs">${tx.instrument} <span class="ml-2 font-black ${tx.direction === 'LONG' ? 'text-green-600' : 'text-red-600'}">${tx.direction}</span></div>
+                <div class="text-[10px] text-slate-400 mt-0.5">${tx.lot} LOT @ ${tx.entryPrice} → ${tx.exitPrice || 'OPEN'}</div>
+              </div>
+              <div class="${pnl >= 0 ? 'text-green-600' : 'text-red-600'} font-black text-xs">${pnl >= 0 ? '+' : '-'}$${Math.abs(pnl).toFixed(2)}</div>
+            </div>`;
+        }).join('');
+    }
+
+    function changeMonth(delta) { journalCalendarDate.setMonth(journalCalendarDate.getMonth() + delta); renderJournalCalendar(); }
+    function goToToday() { journalCalendarDate = new Date(); selectedDateStr = null; renderJournalCalendar(); }
+
+// Modal close handlers
+    window.addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal')) {
+        e.target.style.display = 'none';
+        if (e.target.id === 'txDetailModal') document.body.removeChild(e.target);
+      }
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('txDetailModal');
+        if (modal) {
+          modal.style.display = 'none';
+          document.body.removeChild(modal);
+        }
+      }
+    });
+
+    function renderTradesTable(trades) {
+      const tbody = document.getElementById('tradesTable');
+      if (!trades.length) { tbody.innerHTML = '<tr><td colspan="10" class="px-6 py-12 text-center text-slate-400 italic">Belum ada trade</td></tr>'; return; }
+      tbody.innerHTML = trades.map(tx => {
+        const pnl = tx.manualPnL ?? tx.calculatedPnL ?? 0;
+        const statusBadge = tx.status === 'PROFIT' ? 'badge-profit' : tx.status === 'LOSS' ? 'badge-loss' : 'badge-open';
+        const directionClass = tx.direction === 'LONG' ? 'text-green-600' : 'text-red-600';
+        
+        // Build journal/evaluation summary
+        let journalHtml = '';
+        if (tx.chronology) {
+          journalHtml += `<div class="text-[10px] text-slate-500 mb-0.5"><span class="font-bold text-slate-600">Entry:</span> ${tx.chronology.substring(0, 40)}${tx.chronology.length > 40 ? '...' : ''}</div>`;
+        }
+        if (tx.status === 'LOSS' && tx.evaluation) {
+          if (tx.evaluation.mistakes) {
+            journalHtml += `<div class="text-[10px] text-red-500"><span class="font-bold">Kesalahan:</span> ${tx.evaluation.mistakes.substring(0, 40)}${tx.evaluation.mistakes.length > 40 ? '...' : ''}</div>`;
+          }
+          if (tx.evaluation.lessons) {
+            journalHtml += `<div class="text-[10px] text-amber-600"><span class="font-bold">Pelajaran:</span> ${tx.evaluation.lessons.substring(0, 40)}${tx.evaluation.lessons.length > 40 ? '...' : ''}</div>`;
+          }
+        }
+        if (!journalHtml) journalHtml = '<div class="text-[10px] text-slate-400 italic">Belum diisi</div>';
+        
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="px-4 py-4 text-xs text-slate-500 font-medium">${new Date(tx.dateTime).toLocaleDateString('id-ID')}</td>
+            <td class="px-4 py-4 text-xs font-bold text-slate-800">${tx.instrument}</td>
+            <td class="px-4 py-4 text-xs font-bold ${directionClass}">${tx.direction}</td>
+            <td class="px-4 py-4 text-xs text-slate-600">${tx.lot}</td>
+            <td class="px-4 py-4 text-xs text-slate-600">${tx.entryPrice}</td>
+            <td class="px-4 py-4 text-xs text-slate-600">${tx.exitPrice || '-'}</td>
+            <td class="px-4 py-4"><span class="badge ${statusBadge} text-[9px]">${tx.status}</span></td>
+            <td class="px-4 py-4 text-right font-black ${pnl >= 0 ? 'text-green-600' : 'text-red-600'}">${(pnl >= 0 ? '+' : '-')}$${Math.abs(pnl).toFixed(2)}</td>
+            <td class="px-4 py-4 text-left">${journalHtml}</td>
+            <td class="px-4 py-4 text-center">
+              <button class="text-indigo-600 hover:text-indigo-800 font-bold text-[10px] uppercase tracking-tighter" onclick="loadTransactionDetail('${tx.id}')">Detail</button>
+            </td>
+          </tr>`;
+      }).join('');
+    }
+
+    function filterTrades() {
+      const search = document.getElementById('searchTrade').value.toLowerCase();
+      const status = document.getElementById('filterStatus').value;
+      const filtered = allTrades.filter(tx => {
+        const matchSearch = !search || tx.instrument.toLowerCase().includes(search);
+        const matchStatus = !status || tx.status === status;
+        return matchSearch && matchStatus;
+      });
+      renderTradesTable(filtered);
+    }
+
+    // Form handlers
+    document.getElementById('txForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = document.getElementById('status').value;
+      const payload = {
+        dateTime: new Date().toISOString(),
+        instrument: document.getElementById('instrument').value,
+        direction: document.getElementById('direction').value,
+        lot: parseFloat(document.getElementById('lot').value),
+        entryPrice: parseFloat(document.getElementById('entryPrice').value),
+        exitPrice: document.getElementById('exitPrice').value ? parseFloat(document.getElementById('exitPrice').value) : undefined,
+        stopLoss: document.getElementById('stopLoss').value ? parseFloat(document.getElementById('stopLoss').value) : undefined,
+        takeProfit: document.getElementById('takeProfit').value ? parseFloat(document.getElementById('takeProfit').value) : undefined,
+        status: status,
+        manualPnL: document.getElementById('manualPnL').value ? parseFloat(document.getElementById('manualPnL').value) : undefined,
+      };
+      const res = await fetch('/api/transactions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (res.ok) {
+        const tx = await res.json();
+        // Save evaluation for any status (at least chronology)
+        await fetch('/api/evaluations', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ 
+            transactionId: tx.id, 
+            type: status === 'LOSS' ? 'LOSS' : 'PROFIT', 
+            chronology: document.getElementById('reason').value 
+          }) 
+        });
+        e.target.reset();
+        setDirection('LONG');
+        showPage('dashboard');
+      }
+    });
+    
+    document.getElementById('depositForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await fetch('/api/cash-flows', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'DEPOSIT', amount: parseFloat(document.getElementById('depositAmount').value), notes: document.getElementById('depositNotes').value }) });
+      hideModal('depositModal'); e.target.reset(); loadDashboard();
+    });
+    document.getElementById('withdrawalForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await fetch('/api/cash-flows', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'WITHDRAWAL', amount: parseFloat(document.getElementById('withdrawalAmount').value), notes: document.getElementById('withdrawalNotes').value }) });
+      hideModal('withdrawalModal'); e.target.reset(); loadDashboard();
+    });
+  </script>
+</body>
+</html>

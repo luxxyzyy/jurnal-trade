@@ -1,0 +1,111 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model TradingPlan {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
+}
+
+enum TransactionDirection {
+  LONG
+  SHORT
+}
+
+enum TransactionStatus {
+  OPEN
+  PROFIT
+  LOSS
+  BREAKEVEN
+}
+
+model Transaction {
+  id            String              @id @default(cuid())
+  dateTime      DateTime
+  instrument    String
+  direction     TransactionDirection
+  lot           Float
+  entryPrice    Float
+  exitPrice     Float?
+  stopLoss      Float?
+  takeProfit    Float?
+  status        TransactionStatus
+  manualPnL     Float?
+  calculatedPnL Float?
+  strategyId    String?
+  strategy      TradingPlan?        @relation(fields: [strategyId], references: [id])
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  evaluation        Evaluation?
+  lossReasons       TransactionLossReason[]
+  evaluationHistory EvaluationHistory[]
+
+  @@index([dateTime])
+  @@index([instrument])
+  @@index([direction])
+  @@index([status])
+  @@index([strategyId])
+}
+
+enum EvaluationType {
+  PROFIT
+  LOSS
+  DRAFT
+}
+
+model Evaluation {
+  id                      String            @id @default(cuid())
+  transactionId           String            @unique
+  transaction             Transaction        @relation(fields: [transactionId], references: [id])
+  type                    EvaluationType
+  chronology              String?
+  mistakes                String?
+  correctActions          String?
+  lessons                 String?
+  actionItems             String?
+  followedPlan            Boolean?
+  entryMatchesSetup       Boolean?
+  properRiskManagement    Boolean?
+  emotionalDecision       Boolean?
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+}
+
+model LossReason {
+  id    String @id @default(cuid())
+  key   String @unique
+  label String
+}
+
+model TransactionLossReason {
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  lossReason    LossReason  @relation(fields: [lossReasonId], references: [id])
+  transactionId String
+  lossReasonId  String
+
+  @@id([transactionId, lossReasonId])
+}
+
+model EvaluationHistory {
+  id                      String            @id @default(cuid())
+  transactionId           String
+  transaction             Transaction        @relation(fields: [transactionId], references: [id])
+  evaluationId            String?
+  field                   String
+  oldValue                String?
+  newValue                String?
+  createdAt               DateTime          @default(now())
+}
